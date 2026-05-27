@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>TFT S17 助手</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f0f1a;color:#ddd;min-height:100dvh}
+.app{max-width:480px;margin:0 auto;padding:12px 12px 40px}
+h1{text-align:center;font-size:1.3rem;padding:14px 0 4px;color:#ffd700;letter-spacing:2px}
+.sub{text-align:center;font-size:.7rem;color:#666;margin-bottom:14px}
+
+/* Tabs */
+.tabs{display:flex;gap:3px;margin-bottom:14px;background:#111;border-radius:10px;padding:3px}
+.tab{flex:1;padding:10px 2px;text-align:center;border-radius:8px;font-size:.78rem;color:#888;font-weight:600;user-select:none;-webkit-user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0);transition:all .2s}
+.tab.on{background:#1a1a2e;color:#ffd700}
+.panel{display:none}
+.panel.on{display:block}
+
+/* Cards */
+.card{background:#1a1a2e;border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid #2a2a4e}
+.card h2{font-size:.82rem;color:#bbb;margin-bottom:10px}
+.row{display:flex;gap:6px;flex-wrap:wrap}
+
+/* Buttons */
+button{padding:12px 8px;border-radius:10px;border:1px solid #333;background:#1e1e36;color:#bbb;font-size:.82rem;text-align:center;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0);-webkit-user-select:none;user-select:none;transition:all .15s}
+button:active{transform:scale(.96);opacity:.8}
+button.pick{border-color:#ffd700;background:#2a2a1e;color:#ffd700}
+.row button{flex:1;min-width:60px}
+
+/* Result */
+.result{background:linear-gradient(135deg,#1a1a2e,#1e1e3a);border:2px solid #ffd700;border-radius:14px;padding:18px;margin:14px 0;text-align:center;animation:fadeIn .3s}
+.result h3{font-size:1.6rem;font-weight:900;margin:6px 0}
+.result p{font-size:.8rem;color:#aaa;line-height:1.6}
+.red{color:#e74c3c}
+.green{color:#2ecc71}
+.gold{color:#ffd700}
+
+/* Items */
+.items{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.items button{border:2px solid #333;padding:8px 4px;font-size:.68rem;display:flex;flex-direction:column;align-items:center;gap:2px}
+.items button span{font-size:1.4rem}
+
+/* Rec cards */
+.rec{margin-bottom:10px;border-radius:12px;border:1px solid #2a2a4e;overflow:hidden}
+.rec-head{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#1e1e36}
+.rec-head .t{font-weight:900;font-size:.85rem;min-width:28px}
+.rec-head .n{font-weight:700;font-size:.82rem;flex:1}
+.rec-head .c{color:#999;font-size:.7rem}
+.rec-head .pct{font-weight:700;font-size:.75rem;min-width:38px;text-align:right}
+.rec-bar{height:4px}
+.rec-body{padding:10px 14px;font-size:.72rem;color:#999;line-height:1.7}
+.rec-body b{color:#bbb}
+
+.aug{margin-top:6px;padding-top:6px;border-top:1px solid #2a2a4e}
+.aug .stage{color:#666;font-size:.65rem;margin:3px 0 2px}
+.aug .tag{display:inline-block;padding:2px 7px;margin:1px 3px 1px 0;border-radius:10px;font-size:.65rem;border:1px solid #333;color:#999}
+.aug .tag.g{color:#ffd700;border-color:#5a5010}
+.aug .tag.p{color:#e74c3c;border-color:#5a2020}
+
+.copy{background:#2a2a4e;border:none;color:#ffd700;padding:5px 10px;border-radius:6px;font-size:.7rem;margin:6px 0 0;display:inline-block}
+
+.tip{background:#1a2a1e;border:1px solid #2ecc71;border-radius:8px;padding:10px;margin:6px 0;font-size:.74rem;color:#aaa;line-height:1.6}
+.warn{background:#2a1a1a;border:1px solid #e74c3c;border-radius:8px;padding:10px;margin:6px 0;font-size:.74rem;color:#aaa;line-height:1.6}
+
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#2ecc71;color:#000;padding:8px 24px;border-radius:20px;font-size:.8rem;font-weight:700;z-index:999;opacity:0;pointer-events:none;transition:opacity .3s}
+.toast.on{opacity:1}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>云顶 S17 助手</h1>
+<div class="sub">装备 → 阵容 → 海克斯</div>
+
+<div class="tabs" id="tabs">
+<div class="tab on" data-panel="decide">决策</div>
+<div class="tab" data-panel="items">装备</div>
+<div class="tab" data-panel="tempo">节奏</div>
+<div class="tab" data-panel="comps">阵容码</div>
+</div>
+
+<!-- 决策 -->
+<div class="panel on" id="decide">
+<div class="card"><h2>当前回合</h2><div class="row">
+<button data-round="4-1">4-1</button>
+<button data-round="4-2">4-2</button>
+<button data-round="4-3">4-3/4</button>
+<button data-round="4-5">4-5</button>
+<button data-round="4-6">4-6/7</button>
+</div></div>
+<div id="d-questions"></div>
+<div id="d-result"></div>
+</div>
+
+<!-- 装备 -->
+<div class="panel" id="items">
+<div class="card"><h2>点选你有散件</h2>
+<div class="items" id="item-grid"></div>
+<button style="width:100%;border-color:#555" id="clear-items">清除重选</button></div>
+<div id="recs"></div>
+</div>
+
+<!-- 节奏 -->
+<div class="panel" id="tempo">
+<div class="card"><h2>速9 — 4-5~5-1 上9</h2><div class="tip">大连胜+血量>70+质量够打<br>4阶段不D，白嫖硬撑，5-1拉9搜五费</div></div>
+<div class="card"><h2>稳9 — 5-2~5-5 上9</h2><div class="tip">标准局，4-2/4-3小D 20块提两星稳血<br>8人口过渡存钱，5-3左右上9</div></div>
+<div class="card"><h2>搏命9 — 剩20块也上</h2><div class="warn">同行≥2家，五费卡牌库紧张<br>先上9抢天选，一星五费天选 > 两星四费</div></div>
+<div class="card"><div class="result" style="font-size:.85rem;line-height:2.2">4-2看一眼，血量低了D一点<br>4-5再判断，能稳就存上9干<br>同行多了别犹豫，20块强上9抢先去</div></div>
+</div>
+
+<!-- 阵容码 -->
+<div class="panel" id="comps">
+<div class="card"><h2>T0 四四斗圣 <span style="color:#ff6b6b">T0</span></h2><div class="tip">剑圣+千珏+塔姆<br>4-2拉8→全二星上9补菲奥娜+莫甘娜</div><button class="copy" data-code="0203100d00f01e02402f04f01f013058TFTSet17">复制阵容码</button></div>
+<div class="card"><h2>走地龙王 <span style="color:#ffd700">T0.5</span></h2><div class="tip">龙王主C法系<br>蓝霸符+大天使+珠光护手</div><button class="copy" data-code="0204e01401103902702202603802901cTFTSet17">复制阵容码</button></div>
+<div class="card"><h2>暗星大虫 <span style="color:#ffd700">T1</span></h2><div class="tip">大虫子+冰女<br>刚需6暗星质变</div><button class="copy" data-code="0204504603e02504e02002703c022023TFTSet17">复制阵容码</button></div>
+<div class="card"><h2>薇古丝九五 <span style="color:#ffd700">T1</span></h2><div class="tip">薇古丝+男枪<br>羊刀+法爆+蓝buff</div><button class="copy" data-code="0204702e02302701e02003c01f023TFTSet17">复制阵容码</button></div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ TAB 切换 ============
+(function(){
+var tabs=document.getElementById('tabs');
+var panels=document.querySelectorAll('.panel');
+tabs.addEventListener('click',function(e){
+var tab=e.target.closest('.tab');
+if(!tab)return;
+var pid=tab.getAttribute('data-panel');
+tabs.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
+tab.classList.add('on');
+panels.forEach(function(p){p.classList.remove('on');});
+var panel=document.getElementById(pid);
+if(panel)panel.classList.add('on');
+});
+})();
+
+// ============ 决策（回合精确版） ============
+(function(){
+var round='';
+var answers={};
+var result=document.getElementById('d-result');
+var questions=document.getElementById('d-questions');
+var roundBtns=document.querySelectorAll('[data-round]');
+
+// 各回合的问题和逻辑
+var ROUNDS={
+'4-1':{
+title:'4-1 — 刚上7/8人口',
+questions:[
+{id:'hp',label:'当前血量',opts:[{v:'high',t:'> 50'},{v:'mid',t:'30-50'},{v:'low',t:'< 30'}]},
+{id:'econ',label:'当前经济',opts:[{v:'high',t:'> 50 块'},{v:'mid',t:'30-50'},{v:'low',t:'< 30'}]},
+{id:'found',label:'拿到核心四费卡了吗',opts:[{v:'yes',t:'至少1张'},{v:'half',t:'有打工替代'},{v:'no',t:'还没有'}]},
+],
+decide:function(a){
+var d='';
+if(a.hp==='low'){d='<h3 class="red">小D稳血</h3><p>血量危险先花20块找张四费卡或前排两星撑住。<br>别省——4-1死太快连分都没有。</p>';}
+else if(a.econ==='high'&&a.found==='yes'){d='<h3 class="gold">存钱等4-2</h3><p>经济好+有核心卡，别乱D。<br>4-2再大D，比别人多一轮利息。</p>';}
+else if(a.econ==='low'||a.found==='no'){d='<h3 class="green">小D过渡</h3><p>花15-20块找一张核心卡或打工前排。<br>目的是4-2之前不掉太多血。</p>';}
+else{d='<h3 class="gold">观望一回合</h3><p>血量经济都不错，白嫖一轮。<br>4-2是真正的启动回合，留着钱。</p>';}
+return d;
+}
+},
+'4-2':{
+title:'4-2 — 关键启动回合',
+questions:[
+{id:'hp',label:'当前血量',opts:[{v:'high',t:'> 50'},{v:'mid',t:'30-50'},{v:'low',t:'< 30'}]},
+{id:'star',label:'主C/主坦两星情况',opts:[{v:'good',t:'都两星'},{v:'half',t:'只有一个'},{v:'none',t:'都没两星'}]},
+{id:'contest',label:'几家同行',opts:[{v:'0',t:'独家'},{v:'1',t:'1家'},{v:'2',t:'≥2家'}]},
+],
+decide:function(a){
+var d='';
+if(a.hp==='low'){d='<h3 class="red">梭哈 D 牌</h3><p>血量见底D到剩10块保命。<br>活下来才有分，别想上9了。</p>';}
+else if(a.hp==='mid'){
+if(a.star==='none'){d='<h3 class="red">4-2 大D</h3><p>梭到至少一个两星主C或主坦。<br>稳血后再考虑存钱上8/9。</p>';}
+else if(a.star==='half'){d='<h3 class="red">小D 20块</h3><p>花20块补另一个两星就停手。<br>然后存钱等5-3上9。</p>';}
+else{d='<h3 class="gold">存钱上9</h3><p>质量够了别D了。存钱5-2~5-5上9。</p>';}
+}else{
+if(a.star==='none'){d='<h3 class="green">小D稳血</h3><p>花20块提到有一个两星，然后存钱速9。<br>血多但质量差也不能完全不管。</p>';}
+else if(a.star==='half'){d='<h3 class="gold">存钱速9</h3><p>血量健康+质量可以，存钱4-5~5-1拉9！</p>';}
+else{d='<h3 class="gold">直接速9</h3><p>天胡局！5-1拉9搜五费卡。<br>你是全场节奏领先者。</p>';}
+}
+if(a.contest==='2'&&a.hp!=='low')d+='<p style="color:#e74c3c;margin-top:8px">🔥 同行≥2家！先上9先拿五费卡，别贪利息。</p>';
+return d;
+}
+},
+'4-3':{
+title:'4-3/4-4 — 中期评估',
+questions:[
+{id:'hp',label:'当前血量',opts:[{v:'high',t:'> 40'},{v:'mid',t:'20-40'},{v:'low',t:'< 20'}]},
+{id:'4-2result',label:'4-2 大D效果如何',opts:[{v:'good',t:'找到了！'},{v:'half',t:'能打但不够'},{v:'bad',t:'D崩了'}]},
+{id:'econ',label:'还剩多少钱',opts:[{v:'high',t:'> 30 块'},{v:'mid',t:'15-30'},{v:'low',t:'< 15'}]},
+],
+decide:function(a){
+var d='';
+if(a['4-2result']==='bad'||a.hp==='low'){
+d='<h3 class="red">调整目标：前四吃分</h3><p>D崩了别硬扛。现在目标从吃鸡变成吃分。<br>有什么合什么，别留散件，每一波都要赢。</p>';}
+else if(a['4-2result']==='good'&&a.hp==='high'){
+d='<h3 class="gold">锁血存钱</h3><p>场面稳了，从现在开始一毛不D。<br>存钱5-1/5-2拉9，等五费卡翻盘。</p>';}
+else if(a['4-2result']==='half'){
+if(a.econ==='high')d='<h3 class="green">花10块微调</h3><p>小补一下把缺的那张提到两星。<br>然后锁血存钱上9。</p>';
+else d='<h3 class="red">稳住别D了</h3><p>钱太少，每回合吃利息白嫖。<br>等4-5选秀+4-7野怪补充。</p>';
+}
+else{d='<h3 class="gold">正常存钱</h3><p>场面合格，存利息等5阶段。<br>4-5选秀补关键散件。</p>';}
+return d;
+}
+},
+'4-5':{
+title:'4-5 — 选秀回合',
+questions:[
+{id:'comp',label:'你玩什么阵容',opts:[{v:'ad',t:'物理(斗圣/劫)'},{v:'ap',t:'法系(龙王/薇古丝)'},{v:'tank',t:'坦克(大虫/狗头)'},{v:'flex',t:'还没定'}]},
+{id:'missing',label:'最缺什么',opts:[{v:'carry',t:'主C装备'},{v:'tank',t:'前排肉装'},{v:'key',t:'关键散件(大剑/眼泪等)'}]},
+],
+decide:function(a){
+var d='';
+if(a.comp==='ad'){
+if(a.missing==='carry')d='<h3 class="gold">抢反曲弓 / 大剑</h3><p>物理C位核心：羊刀(反曲弓+大棒)或夜刃(大剑+拳套)</p>';
+else if(a.missing==='tank')d='<h3 class="gold">抢锁子甲 / 腰带</h3><p>前排肉装：荆棘背心或狂徒</p>';
+else d='<h3 class="gold">优先拿大剑</h3><p>物理阵容大剑需求最高</p>';
+}else if(a.comp==='ap'){
+if(a.missing==='carry')d='<h3 class="gold">抢大棒 / 眼泪</h3><p>法系核心：蓝霸符(眼泪+眼泪)或珠光(大棒+拳套)</p>';
+else if(a.missing==='tank')d='<h3 class="gold">抢腰带 / 锁子甲</h3><p>狂徒或荆棘背心</p>';
+else d='<h3 class="gold">优先拿眼泪/大棒</h3><p>法系阵容法强装优先</p>';
+}else if(a.comp==='tank'){
+d='<h3 class="gold">抢腰带 / 锁子甲 / 魔抗</h3><p>坦克阵容核心：狂徒+荆棘+龙爪</p>';
+}else{
+d='<h3 class="gold">拿万能散件：拳套 / 腰带</h3><p>还没定阵容就拿最通用的<br>拳套→正义/水银/无尽<br>腰带→狂徒/基克</p>';
+}
+return d;
+}
+},
+'4-6':{
+title:'4-6/4-7 — 野怪回合 准备5阶段',
+questions:[
+{id:'hp',label:'当前血量',opts:[{v:'high',t:'> 35'},{v:'mid',t:'15-35'},{v:'low',t:'< 15'}]},
+{id:'star',label:'主力质量',opts:[{v:'good',t:'全两星'},{v:'half',t:'还差一张'},{v:'none',t:'还差很多'}]},
+],
+decide:function(a){
+var d='';
+if(a.star==='good'&&a.hp!=='low'){
+d='<h3 class="gold">5-1 直接拉9</h3><p>质量够了，野怪回合存钱。<br>5-1拉9搜五费卡，节奏完美。</p>';}
+else if(a.hp==='low'){
+d='<h3 class="red">别上9了 全力D牌</h3><p>血量太低，5-1再D一波。<br>目标：活进前四。</p>';}
+else if(a.star==='half'){
+if(a.hp==='high')d='<h3 class="gold">5-2 拉8上9</h3><p>先花点钱提到全两星锁血。<br>然后5-3左右上9。</p>';
+else d='<h3 class="green">5-1 小D稳血</h3><p>先提到全两星，再看血量决定是否上9。</p>';
+}else{
+d='<h3 class="red">5-1 大D一波</h3><p>质量不够别想上9。5-1把钱D完<br>提到至少主力全两星。</p>';}
+return d;
+}
+},
+};
+
+function pickRound(val){
+round=val;
+answers={};
+roundBtns.forEach(function(b){
+b.classList.toggle('pick',b.getAttribute('data-round')===val);
+});
+renderQuestions();
+result.innerHTML='';
+}
+
+function renderQuestions(){
+var r=ROUNDS[round];
+if(!r){questions.innerHTML='';return;}
+var html='<div class="card"><h2>'+r.title+'</h2>';
+r.questions.forEach(function(q){
+html+='<div style="margin-bottom:8px"><div style="font-size:.72rem;color:#888;margin-bottom:4px">'+q.label+'</div><div class="row">';
+q.opts.forEach(function(o){
+var picked=answers[q.id]===o.v?' pick':'';
+html+='<button data-q="'+q.id+'" data-v="'+o.v+'" class="ans'+picked+'">'+o.t+'</button>';
+});
+html+='</div></div>';
+});
+html+='</div>';
+questions.innerHTML=html;
+
+// 绑事件
+questions.querySelectorAll('.ans').forEach(function(b){
+b.addEventListener('click',function(){
+var qid=this.getAttribute('data-q');
+var val=this.getAttribute('data-v');
+answers[qid]=val;
+// 更新选中状态
+questions.querySelectorAll('[data-q="'+qid+'"]').forEach(function(x){
+x.classList.remove('pick');
+});
+this.classList.add('pick');
+// 所有问题都答了就显示结果
+var allDone=r.questions.every(function(q){return !!answers[q.id];});
+if(allDone)result.innerHTML='<div class="result">'+r.decide(answers)+'</div>';
+});
+});
+}
+
+roundBtns.forEach(function(b){
+b.addEventListener('click',function(){
+pickRound(this.getAttribute('data-round'));
+});
+});
+
+// 默认选中4-2
+pickRound('4-2');
+})();
+
+// ============ 装备推荐 ============
+(function(){
+var BASE=[
+{id:'bf',e:'🗡️',n:'大剑'},
+{id:'bow',e:'🏹',n:'反曲弓'},
+{id:'rod',e:'🪄',n:'大棒'},
+{id:'tear',e:'💧',n:'眼泪'},
+{id:'vest',e:'🛡️',n:'锁子甲'},
+{id:'cloak',e:'🧿',n:'魔抗'},
+{id:'belt',e:'🎗️',n:'腰带'},
+{id:'glove',e:'🥊',n:'拳套'},
+];
+
+var COMPS=[
+{id:'dousheng',t:'T0',n:'四四斗圣',c:'剑圣+千珏+塔姆',
+req:'bf glove bow bow'.split(' '),
+bis:'夜之锋刃 · 正义之手 · 巨人杀手',
+augs:{'2-1':[{n:'战斗法师',t:'g',d:'前排盾后排法强'},{n:'便携锻炉',t:'g',d:'神器三选一'},{n:'潘多拉',t:'g',d:'装备重铸'}],'3-2':[{n:'理想主义',t:'g',d:'正义之手+12%'},{n:'肾上腺',t:'g',d:'普攻回蓝'},{n:'重量级人物',t:'p',d:'生命值→伤害'}],'4-2':[{n:'斗士之徽',t:'g',d:'+1斗士'},{n:'不是今天',t:'g',d:'免死'},{n:'治疗法球',t:'g',d:'击杀回血'}]},
+code:'0203100d00f01e02402f04f01f013058TFTSet17'},
+
+{id:'longwang',t:'T0.5',n:'走地龙王',c:'龙王 法系主C',
+req:'tear tear rod glove'.split(' '),
+bis:'蓝霸符 · 大天使之杖 · 珠光护手',
+augs:{'2-1':[{n:'学习拼读',t:'g',d:'每回合+2法强'},{n:'潘多拉',t:'g',d:'装备重铸'},{n:'法力流系带',t:'g',d:'施法回蓝'}],'3-2':[{n:'珠光莲花',t:'g',d:'技能可暴击'},{n:'魔法涌动',t:'g',d:'施法+攻速'},{n:'好运眷顾',t:'p',d:'连胜额外金币'}],'4-2':[{n:'法师之徽',t:'g',d:'+1法师'},{n:'终极飞升',t:'p',d:'18秒后+100%伤害'}]},
+code:'0204e01401103902702202603802901cTFTSet17'},
+
+{id:'dachong',t:'T1',n:'暗星大虫',c:'大虫子+冰女',
+req:'belt belt vest cloak rod bf'.split(' '),
+bis:'狂徒 · 荆棘背心 · 巨龙之爪（冰女：青龙刀+珠光）',
+augs:{'2-1':[{n:'护甲镀层',t:'g',d:'+25护甲/回合'},{n:'巨块',t:'g',d:'+生命值'},{n:'潘多拉',t:'g',d:'装备重铸'}],'3-2':[{n:'暗星之徽',t:'p',d:'+1暗星 质变！'},{n:'重量级人物',t:'g',d:'生命→伤害'},{n:'耐久训练',t:'g',d:'击杀+10血'}],'4-2':[{n:'暗星之冕',t:'p',d:'+1暗星+装备'},{n:'堡垒之徽',t:'g',d:'+1堡垒'}]},
+code:'0204504603e02504e02002703c022023TFTSet17'},
+
+{id:'weigusi',t:'T1',n:'薇古丝九五',c:'薇古丝+男枪',
+req:'bow rod glove tear'.split(' '),
+bis:'鬼索狂暴之刃 · 珠光护手 · 蓝霸符',
+augs:{'2-1':[{n:'学习拼读',t:'g',d:'+2法强/回合'},{n:'战争财宝',t:'g',d:'击杀掉金币'},{n:'升级咯',t:'p',d:'升级经验减少'}],'3-2':[{n:'珠光莲花',t:'g',d:'技能可暴击'},{n:'重装之徽',t:'g',d:'+1重装'},{n:'知识下载',t:'g',d:'+经验值'}],'4-2':[{n:'法师之冕',t:'p',d:'+2法师+装备'},{n:'新星之徽',t:'g',d:'+1新星'}]},
+code:'0204702e02302701e02003c01f023TFTSet17'},
+
+{id:'jie',t:'T1',n:'新星劫九五',c:'劫+努努',
+req:'bf tear glove belt'.split(' '),
+bis:'朔极之矛 · 夜之锋刃 · 适应性头盔',
+augs:{'2-1':[{n:'理想主义',t:'g',d:'正义之手+12%'},{n:'便携锻炉',t:'g',d:'神器三选一'},{n:'打捞桶',t:'g',d:'分解装备'}],'3-2':[{n:'新星之徽',t:'g',d:'+1新星'},{n:'肾上腺',t:'g',d:'普攻回蓝'},{n:'战争财宝',t:'g',d:'击杀掉金币'}],'4-2':[{n:'新星之冕',t:'p',d:'+2新星+装备'},{n:'不是今天',t:'g',d:'免死'}]}},
+];
+
+var picked=[];
+var grid=document.getElementById('item-grid');
+var recs=document.getElementById('recs');
+
+BASE.forEach(function(item,i){
+var b=document.createElement('button');
+b.innerHTML='<span>'+item.e+'</span>'+item.n;
+b.addEventListener('click',function(){
+if(picked.indexOf(item.id)>=0){
+picked=picked.filter(function(x){return x!==item.id;});
+}else{
+picked.push(item.id);
+}
+refresh();
+});
+grid.appendChild(b);
+});
+
+document.getElementById('clear-items').addEventListener('click',function(){
+picked=[];refresh();
+});
+
+function refresh(){
+var btns=grid.querySelectorAll('button');
+btns.forEach(function(b,i){
+b.classList.toggle('pick',picked.indexOf(BASE[i].id)>=0);
+});
+if(picked.length===0){recs.innerHTML='';return;}
+
+// 计算匹配度
+var scored=COMPS.map(function(c){
+var need=[].concat(c.req);
+var match=0;
+picked.forEach(function(item){
+var idx=need.indexOf(item);
+if(idx>=0){match++;need.splice(idx,1);}
+});
+var pct=Math.round(match/c.req.length*100);
+return{comp:c,score:pct,used:match,total:c.req.length};
+});
+scored.sort(function(a,b){return b.score-a.score;});
+
+var html='<div class="card"><h2>推荐阵容 — 按匹配度</h2>';
+scored.forEach(function(s,rank){
+var c=s.comp;
+var fill=s.score>=75?'#2ecc71':s.score>=50?'#f39c12':'#e74c3c';
+var bg=rank===0?'#1e2a1e':'#1e1e36';
+html+='<div class="rec"><div class="rec-head" style="background:'+bg+'"><span class="t" style="color:'+fill+'">'+c.t+'</span><span class="n">'+c.n+'</span><span class="c">'+c.c+'</span><span class="pct" style="color:'+fill+'">'+s.score+'%</span></div><div class="rec-bar" style="background:'+fill+';width:'+s.score+'%"></div><div class="rec-body"><b>三件套</b>：'+c.bis;
+if(c.code)html+='<br><button class="copy" data-code="'+c.code+'">复制阵容码</button>';
+if(c.augs){
+html+='<div class="aug">';
+Object.keys(c.augs).forEach(function(stage){
+html+='<div class="stage">'+stage+'：';
+c.augs[stage].forEach(function(a){
+html+='<span class="tag '+a.t+'">'+a.n+' <span style="font-size:.58rem;color:#666">'+a.d+'</span></span>';});
+html+='</div>';});
+html+='</div>';}
+html+='</div></div>';
+});
+html+='</div>';
+recs.innerHTML=html;
+
+// 给新复制按钮绑事件
+recs.querySelectorAll('.copy').forEach(function(b){
+b.addEventListener('click',function(e){
+e.stopPropagation();
+copyCode(this.getAttribute('data-code'));
+});
+});
+}
+
+function copyCode(code){
+navigator.clipboard.writeText(code).then(function(){
+var t=document.getElementById('toast');
+t.textContent='阵容码已复制！';t.classList.add('on');
+setTimeout(function(){t.classList.remove('on');},2000);
+}).catch(function(){alert('复制失败，请手动复制:\n'+code);});
+}
+
+refresh();
+})();
+
+// ============ 全局复制按钮 ============
+document.querySelectorAll('.copy').forEach(function(b){
+b.addEventListener('click',function(){
+var code=this.getAttribute('data-code');
+navigator.clipboard.writeText(code).then(function(){
+var t=document.getElementById('toast');
+t.textContent='阵容码已复制！';t.classList.add('on');
+setTimeout(function(){t.classList.remove('on');},2000);
+}).catch(function(){alert('复制失败:\n'+code);});
+});
+});
+</script>
+</body>
+</html>
